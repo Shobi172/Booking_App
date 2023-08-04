@@ -38,9 +38,13 @@ This is a simple MERN (MongoDB, Express, React, Node.js) stack application that 
 1. Create a .env file in the backend directory and set the following environment variables:
 
 MONGO_URI=your_mongodb_connection_string
+
 JWT_SECRET=your_jwt_secret_key
+
 PORT=your_port
+
 NODEMAILER_MAIL=your_nodemailer_email
+
 NODEMAILER_PASS=your_nodemailer_password
 
 
@@ -55,9 +59,9 @@ The backend server will be running on `http://localhost:5000`.
 
 ## Frontend Setup
 
-1.Navigate to the frontend directory.
+1. Navigate to the frontend directory.
 
-2.Install the dependencies:
+2. Install the dependencies:
 
 `npm install`
 
