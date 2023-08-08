@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import moment from "moment";
 import instance from "../axios";
 import { toast } from "react-toastify";
+import { HashLoader } from "react-spinners";
 
 interface Booking {
   _id: string;
@@ -17,24 +18,38 @@ function DateDetailsPage() {
   const [bookedTimeSlots, setBookedTimeSlots] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const userId = localStorage.getItem("userId");
+  const jwtToken = localStorage.getItem("jwtToken");
   const navigate = useNavigate();
 
   const fetchAvailableTimeSlots = async () => {
     try {
       const response = await instance.get(
-        `/api/booking/available-time-slots/${date}`
+        `/api/booking/available-time-slots/${date}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
       );
       setAvailableTimeSlots(response.data.availableTimeSlots);
     } catch (error) {
       console.error("Error fetching available time slots", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchBookedTimeSlots = async () => {
     try {
       const response = await instance.get(
-        `/api/booking/booked-time-slots/${date}`
+        `/api/booking/available-time-slots/${date}`,
+        {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`,
+          },
+        }
       );
       setBookedTimeSlots(response.data.bookedTimeSlots);
     } catch (error) {
@@ -45,10 +60,10 @@ function DateDetailsPage() {
   useEffect(() => {
     fetchAvailableTimeSlots();
     fetchBookedTimeSlots();
-  }, [date]);
+  }, [date, jwtToken]);
 
   const isTimeSlotBooked = (timeSlot: string) => {
-    return bookedTimeSlots.includes(timeSlot);
+    return bookedTimeSlots?.includes(timeSlot);
   };
 
   const handleBooking = (timeSlot: string) => {
@@ -58,13 +73,20 @@ function DateDetailsPage() {
 
   const handleBookingConfirmation = async (timeSlot: string) => {
     try {
-      if (userId) {
-        const response = await instance.post("/api/booking/book-appointment", {
-          userId,
-          date,
-          timeSlot,
-        });
-        console.log("Appointment booked successfully", response.data);
+      if (userId && jwtToken) {
+        const response = await instance.post(
+          "/api/booking/book-appointment",
+          {
+            userId,
+            date,
+            timeSlot,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${jwtToken}`,
+            },
+          }
+        );
         toast.success("Appointment booked successfully");
         navigate("/booking-details");
         fetchAvailableTimeSlots();
@@ -72,6 +94,7 @@ function DateDetailsPage() {
       }
     } catch (error) {
       console.error("Error booking appointment", error);
+      toast.error("Error booking appointment");
     } finally {
       setShowModal(false);
     }
@@ -86,32 +109,38 @@ function DateDetailsPage() {
       <h1 className="text-2xl font-bold mb-4">
         {moment(date).format("MMMM D, YYYY")}
       </h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {availableTimeSlots.map((timeSlot) => (
-          <div
-            key={timeSlot}
-            className="flex items-center justify-between bg-white p-3 rounded-md shadow-md"
-          >
-            <span>{timeSlot}</span>
-            {isTimeSlotBooked(timeSlot) ? (
-              <button
-                onClick={() => handleBooking(timeSlot)}
-                className="px-2 py-1 bg-red-500 text-white rounded-md"
-                disabled
-              >
-                Booked
-              </button>
-            ) : (
-              <button
-                onClick={() => handleBooking(timeSlot)}
-                className="px-2 py-1 bg-blue-500 text-white rounded-md"
-              >
-                Book
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="flex items-center justify-center">
+          <HashLoader color="#36d7b7" size={50} />
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {availableTimeSlots.map((timeSlot) => (
+            <div
+              key={timeSlot}
+              className="flex items-center justify-between bg-white p-3 rounded-md shadow-md"
+            >
+              <span>{timeSlot}</span>
+              {isTimeSlotBooked(timeSlot) ? (
+                <button
+                  onClick={() => handleBooking(timeSlot)}
+                  className="px-2 py-1 bg-red-500 text-white rounded-md"
+                  disabled
+                >
+                  Booked
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleBooking(timeSlot)}
+                  className="px-2 py-1 bg-blue-500 text-white rounded-md"
+                >
+                  Book
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-opacity-50 bg-gray-500">

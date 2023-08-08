@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import moment from "moment";
 import instance from "../axios";
 import { toast } from "react-toastify";
+import { HashLoader } from "react-spinners";
 
 interface Booking {
   _id: string;
@@ -10,22 +11,25 @@ interface Booking {
   status: string;
 }
 
-function BookingDetailsPage() {
+const BookingDetailsPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // State to track loading state
+  const [isLoading, setIsLoading] = useState(true);
+
   const userId = localStorage.getItem("userId");
   const jwtToken = localStorage.getItem("jwtToken");
 
   const fetchBookings = async () => {
     try {
       if (userId) {
+        setIsLoading(true);
         const response = await instance.get(
           "/api/booking/booked-appointments",
           {
             headers: {
-              Authorization: `Bearer ${userId}`,
+              Authorization: `Bearer ${jwtToken}`,
+              UserId: userId,
             },
           }
         );
@@ -44,7 +48,6 @@ function BookingDetailsPage() {
 
   const handleCancel = async (bookingId: string) => {
     try {
-      console.log("Booking ID:", bookingId);
       if (userId) {
         const selectedBooking = bookings.find(
           (booking) => booking._id === bookingId
@@ -64,7 +67,7 @@ function BookingDetailsPage() {
   const confirmCancel = async () => {
     try {
       setShowModal(false);
-      if (selectedBooking) {
+      if (selectedBooking && jwtToken && userId) {
         const response = await instance.post(
           "/api/booking/cancel-appointment",
           {
@@ -72,12 +75,12 @@ function BookingDetailsPage() {
           },
           {
             headers: {
-              Authorization: `Bearer ${userId}`,
+              Authorization: `Bearer ${jwtToken}`,
+              UserId: userId,
             },
           }
         );
         toast.success("Appointment cancelled successfully");
-        console.log("Appointment cancelled successfully", response.data);
         fetchBookings();
       }
     } catch (error) {
@@ -95,9 +98,13 @@ function BookingDetailsPage() {
         Booking Details
       </h1>
       {isLoading ? (
-        <div className="text-center">Loading...</div>
+        <div className="flex items-center justify-center">
+          <HashLoader color="#36d7b7" size={50} />
+        </div>
       ) : bookings.length === 0 ? (
-        <div className="text-center">No Appointments Found</div>
+        <div className=" flex text-center justify-center">
+          No Appointments Found
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {bookings.map((booking) => (
@@ -155,6 +162,6 @@ function BookingDetailsPage() {
       )}
     </div>
   );
-}
+};
 
 export default BookingDetailsPage;

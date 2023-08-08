@@ -11,21 +11,21 @@ interface DecodedToken {
 }
 
 function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState("");
-  const [otpError, setOtpError] = useState("");
+  const [email, setEmail] = useState<string>("");
+  const [otp, setOtp] = useState<string>("");
+  const [otpSent, setOtpSent] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [emailError, setEmailError] = useState<string>("");
+  const [otpError, setOtpError] = useState<string>("");
 
   const navigate = useNavigate();
 
-  const validateEmail = (email: string) => {
+  const validateEmail = (email: string): boolean => {
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailPattern.test(email);
   };
 
-  const validateOTP = (otp: string) => {
+  const validateOTP = (otp: string): boolean => {
     const otpPattern = /^[0-9]{4}$/;
     return otpPattern.test(otp);
   };

@@ -40,7 +40,15 @@ exports.addAvailableDates = async (req, res) => {
 exports.getAvailableDates = async (req, res) => {
   try {
     const availableDates = await Booking.distinct("date");
-    res.status(200).json({ availableDates });
+    const availableDatesWithTimeSlots = await Promise.all(
+      availableDates.map(async (date) => {
+        const availableTimeSlots = await exports.getAvailableTimeSlotsByDate(
+          date
+        );
+        return { date, timeSlots: availableTimeSlots };
+      })
+    );
+    res.status(200).json({ availableDates: availableDatesWithTimeSlots });
   } catch (error) {
     console.error("Error getting available dates", error);
     res.status(500).json({ message: "Internal server error" });
@@ -50,10 +58,64 @@ exports.getAvailableDates = async (req, res) => {
 exports.getBookedDates = async (req, res) => {
   try {
     const bookedDates = await Booking.distinct("date", { status: "booked" });
-    res.status(200).json({ bookedDates });
+    const bookedDatesWithTimeSlots = await Promise.all(
+      bookedDates.map(async (date) => {
+        const bookedTimeSlots = await exports.getBookedTimeSlotsByDate(date);
+        return { date, timeSlots: bookedTimeSlots };
+      })
+    );
+    res.status(200).json({ bookedDates: bookedDatesWithTimeSlots });
   } catch (error) {
     console.error("Error getting booked dates", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.getBookedTimeSlots = async (req, res) => {
+  try {
+    const date = req.params.date;
+    const bookedTimeSlots = await exports.getBookedTimeSlotsByDate(date);
+    res.status(200).json({ bookedTimeSlots });
+  } catch (error) {
+    console.error("Error getting booked time slots", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Helper function to get booked time slots by date
+exports.getBookedTimeSlotsByDate = async (date) => {
+  try {
+    const bookedTimeSlots = await Booking.find({
+      date,
+      status: "booked",
+    }).distinct("timeSlot");
+    return bookedTimeSlots;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Helper function to get available time slots by date
+exports.getAvailableTimeSlotsByDate = async (date) => {
+  try {
+    const allTimeSlots = [
+      "09:00 AM",
+      "10:00 AM",
+      "11:00 AM",
+      "12:00 PM",
+      "01:00 PM",
+      "02:00 PM",
+      "03:00 PM",
+      "04:00 PM",
+      "05:00 PM",
+    ];
+    const bookedTimeSlots = await exports.getBookedTimeSlotsByDate(date);
+    const availableTimeSlots = allTimeSlots.filter(
+      (timeSlot) => !bookedTimeSlots.includes(timeSlot)
+    );
+    return availableTimeSlots;
+  } catch (error) {
+    throw error;
   }
 };
 
@@ -64,6 +126,7 @@ exports.getAvailableTimeSlots = async (req, res) => {
       date,
       status: "booked",
     }).distinct("timeSlot");
+
     const allTimeSlots = [
       "09:00 AM",
       "10:00 AM",
@@ -89,15 +152,12 @@ exports.bookAppointment = async (req, res) => {
   try {
     const { userId, date, timeSlot } = req.body;
 
-    console.log(userId);
-
     const existingBooking = await Booking.findOne({
       date,
       timeSlot,
       status: "available",
     });
 
-    console.log(existingBooking);
     if (!existingBooking) {
       return res.status(400).json({ message: "Time slot not available" });
     }
@@ -115,18 +175,15 @@ exports.bookAppointment = async (req, res) => {
 
 exports.cancelAppointment = async (req, res) => {
   try {
-    const { bookingId } = req.body; // Access the bookingId directly from the request body
-    const userId = req.header("Authorization").replace("Bearer ", "");
-
-    console.log(bookingId);
-    console.log(userId);
+    const { bookingId } = req.body;
+    const userId = req.header("UserId");
 
     const booking = await Booking.findOne({ _id: bookingId, userId });
     if (!booking) {
       return res.status(400).json({ message: "Booking not found" });
     }
 
-    booking.status = "cancelled";
+    booking.status = "available";
     await booking.save();
 
     res.status(200).json({ message: "Appointment cancelled successfully" });
@@ -138,11 +195,9 @@ exports.cancelAppointment = async (req, res) => {
 
 exports.getBookedAppointmentsByUser = async (req, res) => {
   try {
-    const userId = req.header("Authorization").replace("Bearer ", "");
+    const userId = req.header("UserId");
 
     const bookedAppointments = await Booking.find({ userId, status: "booked" });
-
-    console.log(bookedAppointments);
 
     res.status(200).json({ bookings: bookedAppointments });
   } catch (error) {

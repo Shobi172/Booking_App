@@ -6,6 +6,7 @@ import LoginPage from "./components/LoginPage";
 import CalendarPage from "./components/CalendarPage";
 import DateDetailsPage from "./components/DateDetailsPage";
 import BookingDetailsPage from "./components/BookingDetailsPage";
+import PageNotFound from "./components/PageNotFound";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -27,6 +28,7 @@ function App() {
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/date/:date" element={<DateDetailsPage />} />
         <Route path="/booking-details" element={<BookingDetailsPage />} />
+        <Route path="*" element={<PageNotFound />} />
       </Routes>
     </Router>
   );

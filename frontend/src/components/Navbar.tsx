@@ -25,7 +25,7 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
         <Link
           to="/calendar"
           className={`text-white text-md hover:underline mr-4 md:mr-8 ${
-            !jwtToken ? "pointer-events-none opacity-50" : "" // Disable link if jwtToken is not found
+            !jwtToken ? "pointer-events-none opacity-50" : ""
           }`}
         >
           Home
@@ -33,7 +33,7 @@ const Navbar: React.FC<NavbarProps> = ({ isLoggedIn, onLogout }) => {
         <Link
           to="/booking-details"
           className={`text-white text-md hover:underline ${
-            !jwtToken ? "pointer-events-none opacity-50" : "" // Disable link if jwtToken is not found
+            !jwtToken ? "pointer-events-none opacity-50" : ""
           }`}
         >
           Booking Details
